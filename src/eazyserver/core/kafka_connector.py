@@ -2,160 +2,207 @@ import logging
 logger = logging.getLogger(__name__)
 logger.debug("Loaded " + __name__)
 
+import os
 import json
+import time
+import sys
+import traceback
+from prettyprinter import pprint
 from bson.objectid import ObjectId
 from datetime import datetime
 
-from kafka import KafkaProducer
-from kafka import KafkaConsumer
-from kafka import TopicPartition
+from .pykafka_connector import Kafka_PyKafka
+from .confluent_kafka_connector import Kafka_Confluent
 
-
-def dict_to_binary(the_dict):
-	binary = ' '.join(format(ord(letter), 'b') for letter in the_dict)
-	return binary
-
-def binary_to_dict(the_binary):
-	jsn = ''.join(chr(int(x, 2)) for x in the_binary.split())
-	return jsn
-
-def kafka_to_dict(kafka_msg):
-	msg = json.loads(binary_to_dict(kafka_msg.value))
-	kafka_msg_id = "{id}:{topic}:{partition}:{offset}".format(**{ "id":msg["_id"],"offset":kafka_msg.offset, "partition": kafka_msg.partition, "topic":kafka_msg.topic })
-	msg["_kafka__id"]= kafka_msg_id
-	return msg
-	
-def dict_to_kafka(output,source_data):
-	for data in source_data:
-		if output["source_id"] == data["_id"]:
-			output["_kafka_source_id"] = data["_kafka__id"]
-			break
-	kafka_msg = dict_to_binary(json.dumps(output))
-	return kafka_msg
 
 # TODO: Move/Add formatOutput to behaviour base class 
 # Created following fields in output dict if missing:
 # _id,_created,_updated,source_id,_type,_producer
 def formatOutput(output,behavior,source_data): 
-	if "_id" not in output: output["_id"] = str(ObjectId())
-	if "_updated" not in output: output["_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-	if "_type" not in output: output["_type"] = "BEHAVIOUR"		#TODO take from behavior object
-	if "_producer" not in output: output["_producer"] = "{}:{}:{}".format(behavior.__class__.__name__,"1.0",behavior.id) #name:version:id #TODO take version from behaviour
+    if "_id" not in output: output["_id"] = str(ObjectId())
+    if "_updated" not in output: output["_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if "_type" not in output: output["_type"] = "BEHAVIOUR"		#TODO take from behavior object
+    if "_producer" not in output: output["_producer"] = "{}:{}:{}".format(behavior.__class__.__name__,"1.0",behavior.id) #name:version:id #TODO take version from behaviour
 
-	# Source chaining for stream
-	if "source_id" not in output: 
-		if source_data: # Select rightmost consumer
-			output["source_id"] = source_data[-1]["_id"]
-		else:  # This is Producer
-			output["source_id"] = output["_id"]
-	if "_created" not in output: 
-		if output["source_id"] is None or output["source_id"] == output["_id"]:
-			output["_created"] = output["_updated"]
-		else:
-			for data in source_data:
-				if output["source_id"] == data["_id"]:
-					output["_created"] = data["_created"]
-					break
+    # Source chaining for stream
+    if "source_id" not in output: 
+        if source_data: # Select rightmost consumer
+            output["source_id"] = source_data[-1]["_id"]
+        else:  # This is Producer
+            output["source_id"] = output["_id"]
 
-	if "_created" not in output: 		
-		logger.info("{} | source_id  {} not found for id {}".format(output["_producer"],output["source_id"],output["_id"]))
-		output["_created"] = output["_updated"]
-		
-	return output
+    # source_config chaining for stream
+    if source_data: # Select rightmost consumer
+        output_source_config = source_data[-1]["source_config"]
+    else:
+        # init from behaviour config values 
+        output_source_config ={
+            "organization":behavior.config.get("organization", ""),
+            "hub":behavior.config.get("hub", ""),
+            "camera":behavior.config.get("camera", behavior.config.get("_id", "")),
+            "behaviourType":behavior.config.get("behaviourType", ""),
+            "behaviour":behavior.config.get("_id", ""),
+        }
+        # Handle embedded=true case
+        for key,value in output_source_config.items():
+            if type(value) ==dict:
+                output_source_config[key] = value.get("_id","")
+        # Handle camera type
+        if output_source_config["behaviour"] == output_source_config["camera"]:
+            output_source_config["behaviour"] = ""
+            output_source_config["behaviourType"] = "camera"
+
+    output_source_config.update(output.get("source_config",{}))
+    output["source_config"]=output_source_config
+
+    if "_created" not in output: 
+        if output["source_id"] is None or output["source_id"] == output["_id"]:
+            output["_created"] = output["_updated"]
+        else:
+            # Propagate _created from input data which is source (_id of input specified as source_id of output)
+            for data in source_data:
+                if output["source_id"] == data["_id"]:
+                    output["_created"] = data["_created"]
+                    break
+            # Propagate _created time based upon same source_id of input data
+            for data in source_data:
+                if output["source_id"] == data["source_id"]:
+                    output["_created"] = data["_created"]
+                    break
+                    
+    if "_created" not in output: 		
+        logger.info("{} | source_id  {} not found for id {}".format(output["_producer"],output["source_id"],output["_id"]))
+        output["_created"] = output["_updated"]
+        
+    return output
+
+#############################
+## Main Connector Class
+#############################
 
 class KafkaConnector(object):
-	Type = "KafkaConnector"
-	def __init__(self, Behaviour, producer_topic=None, consumer_topic=None, consumer_topic2=None, kafka_broker="localhost:9092", sync_consumer=True, auto_offset_reset='largest'):
-	# def __init__(self, Behaviour):
-		super(KafkaConnector, self).__init__()
+    Type = "KafkaConnector"
 
-		self.behavior = Behaviour
-		self.producer_topic = producer_topic
-		self.consumer_topic = consumer_topic
-		self.consumer_topic2 = consumer_topic2
-		self.sync_consumer = sync_consumer
-		self.kafka_api_version = (2, 12, 2)
+    def __init__(self, Behaviour, kafka_client_type="confluent", on_exit=None, **kwargs):
 
-		logger.info("=" * 20)
-		logger.info("Kafka INIT Config : ")
-		logger.info("Behaviour : " + str(Behaviour))
-		logger.info("producer_topic : " + str(producer_topic))
-		logger.info("consumer_topic : " + str(consumer_topic))
-		logger.info("consumer_topic2 : " + str(consumer_topic2))
-		logger.info("sync_consumer : " + str(sync_consumer))
-		logger.info("auto_offset_reset : " + str(auto_offset_reset))
-		logger.info("=" * 20)
+        self.kafka_should_run = True
+        self.should_stop =False
+        self.client = None
+        self.behavior = Behaviour
 
-		if(producer_topic):
-			self.producer = KafkaProducer(bootstrap_servers=kafka_broker, max_request_size=20000000)
-		else:
-			self.producer = None
-		
-		if(consumer_topic):
-			self.consumer = KafkaConsumer(consumer_topic, bootstrap_servers=kafka_broker, auto_offset_reset=auto_offset_reset)
-			self.consumer.poll()
-		else:
-			self.consumer = None
+        self.kafka_client_type = kafka_client_type
+        self.kafka_client_config = kwargs
+        self.exit_callbacks=[]
+        if on_exit: self.exit_callbacks.append(on_exit)
+        
+        # TODO : Validate **kwargs
 
-		if(consumer_topic2):
-			self.consumer2 = KafkaConsumer(consumer_topic2, bootstrap_servers=kafka_broker, auto_offset_reset=auto_offset_reset)
-			self.consumer2.poll()
-		else:
-			self.consumer2 = None
+        print("="*50)
+        print("Printing kwargs...")
+        for k,v in kwargs.items():
+            print(k, v)
+        print("="*50)
 
-		
+        # Create client based on type of Kafka Client specified
+        if(self.kafka_client_type == "pykafka"):
+            self.client = Kafka_PyKafka(kafka_client_config=self.kafka_client_config)
+
+        if(self.kafka_client_type == "confluent"):
+            self.client = Kafka_Confluent(kafka_client_config=self.kafka_client_config)
+
+    def enable_kafka(self):
+        logger.info("Enabling Kafka")
+        self.kafka_should_run = True
+
+    def disable_kafka(self):
+        logger.info("Disbaling Kafka")
+        self.kafka_should_run = False
+
+    def stop(self):
+        logger.info("Behaviour is schedule for shutdown.")
+        self.should_stop = True
+
+    ###### Update Related Functions
+    # Topics to be subscribed
+    def subscriptionTopics(self,subscriptions=[]):
+        subscriptions = self.behavior.subscriptionTopics(subscriptions)
+        return subscriptions
+
+    # update event callback
+    def update(self, data):
+        logger.debug("KafkaConnector: Update triggered with data:{}".format(data))
+        UpdateSuccess = self.behavior.update(data)
+        logger.debug("KafkaConnector: Hot update status:{}".format(UpdateSuccess))
+        
+        return UpdateSuccess
 
 
-	def run(self):
-		while True:
-			if(self.consumer): # Check at least primary consumer is present
-				logger.info("Consumed | {} | Topic : {}".format(self.behavior.__class__.__name__, self.consumer_topic))
-				kafka_msg = next(self.consumer)
-				msg = kafka_to_dict(kafka_msg)
-			else:
-				msg = None
+    # Main Method
+    def run(self,app):
+        app.app_context().push()
+        try:
+            while(not self.should_stop):
+                if(self.kafka_should_run):
+                    source_data = []
 
-			if(self.consumer2): # check for two consumers		
-				try:
-					if(self.sync_consumer):
-						kafka_msg = next(self.consumer2)
-						msg2 = kafka_to_dict(kafka_msg)
-						assert msg2["_id"] == msg["source_id"]
-					else:
-						msg2_raw = self.consumer2.poll(max_records=1)
+                    ############################
+                    # Consume
+                    ############################
 
-						if msg2_raw:
-							msg2 = kafka_to_dict(msg2_raw.values()[0][0])							
-						else:
-							msg2 = None
-				except AssertionError:
+                    message_1 = None
+                    message_2 = None
+                    output = None
 
-					logger.info("Syncing Partition...")
-					kafka_source_id = msg["_kafka_source_id"]			#"{id}:{topic}:{partition}:{offset}"
-					topicName = kafka_source_id.split(":")[-3] 			# 3rd last 
-					partitionName = int(kafka_source_id.split(":")[-2]) # 3rd last
-					offset =  int(kafka_source_id.split(":")[-1])
-					partition = TopicPartition(topic=topicName, partition=partitionName) 
+                    # if both consumers are specified
+                    if(self.client.consumer_2_topic):
+                        # print("BOTH CONSUMER PRESENT")
 
-					logger.debug("Partition : " + str(partition))
+                        if(self.kafka_client_config['sync_consumers']):
+                            # sync_consumer = True
+                            message_1, message_2 = self.client.sync_consumers()
 
-					self.consumer2.seek(partition,offset)
-					msg2 = kafka_to_dict(next(self.consumer2))
+                        else:
+                            # sync_consumer = False
+                            message_2 = self.client.consume2(block=False)
+                            message_1 = self.client.consume1()
 
-				output = self.behavior.run(msg, msg2)
-			elif(self.consumer): # One consumer only
-				output = self.behavior.run(msg)
-			else: # Not even primary consumer present, producer only behaviour
-				output = self.behavior.run()
-			
-			# Transform output to fill missing fields
-			if output:
-				source_data = []
-				if self.consumer: source_data.append(msg)
-				if self.consumer2: source_data.append(msg2)
-				output=formatOutput(output,self.behavior,source_data)
+                        # Received both messages
+                        if message_1: source_data.append(message_1)
+                        if message_2: source_data.append(message_2)
+                        output = self.behavior.run(message_1, message_2)
 
-			if(self.producer):
-				logger.info("Produced | {} | Topic : {}".format(self.behavior.__class__.__name__, self.producer_topic))
-				if(output):
-					self.producer.send(topic=self.producer_topic, value=dict_to_kafka(output,source_data))
+                    elif(self.client.consumer_1_topic):
+                        message_1 = self.client.consume1()
+                        source_data.append(message_1)
+                        output = self.behavior.run(message_1)
+                    else:
+                        output = self.behavior.run()
+
+                    # Transform output to fill missing fields
+                    if output:
+                        output = formatOutput(output, self.behavior, source_data)
+
+                    ############################
+                    # Produce
+                    ############################
+
+                    if(self.client.producer_topic):
+                        if(output):
+                            producer_response = self.client.produce(output, source_data)
+
+                else:
+                    logger.info("Kafka Connector paused (self.kafka_should_run = False). Sleeping for 30 secs...")
+                    time.sleep(30)
+
+            logger.info("Behavior is Exiting!!")
+        except Exception as e:
+            logger.error("Exception in Behaviour code:{}",e)
+            print("-"*60)
+            traceback.print_exc(file=sys.stdout)
+            self.on_exit(101)
+            print("-"*60)
+            exit(101)     
+
+    def on_exit(self,exit_code):
+        for callback in self.exit_callbacks:
+            callback(exit_code)

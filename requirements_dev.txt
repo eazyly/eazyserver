@@ -8,14 +8,27 @@ Sphinx==1.8.1
 twine==1.12.1
 Click>=6.0
 
+
 eve==0.8.1
 eve-swagger==0.0.11
 flask>=1.0
-python-socketio==2.0.0
 flask-socketio==3.0.1
 jsonrpcserver==3.5.6
 marshmallow==2.16.3
 gunicorn==19.9.0
 flatten_json==0.1.6
 influxdb==5.0.0
-kafka-python==1.4.4
+confluent-kafka==1.1.0
+pykafka==2.8.0
+prettyprinter==0.18.0
+python-socketio==4.4.0
+python-socketio[client]
+diskcache==4.1.0
+
+#requires librdkafka-dev to be installed
+#apt-get install -y  librdkafka-dev
+#RDKAFKA_INSTALL=system pip install pykafka
+
+#https://github.com/pyeve/eve/issues/1359
+werkzeug==0.16.1
+rabbitMqConnector@ git+https://github.com/MacherLabs/rabbitMqConnector.git@v1.0.4
