@@ -56,15 +56,18 @@ class Eazy(Eve, Events):
     def load_eazy_config(self, configs, env_prefix):
         """Loads the config from environment and settings file."""
         # 1. Loads from settings.ini [default settings]
+        logger.debug("Loading settings.ini [default settings]...")
         self.config.from_pyfile(self.SETTINGS_INI) 
         
         # 2. Loads user provided settings file
         for config_file in configs:
             if os.path.isfile(config_file):
+                logger.debug("Loading "+str(config_file)+"...")
                 self.config.from_pyfile(config_file)
         
         # 3. Loads user provided settings file from environment variable
         if env_prefix + 'CONFIG_FILE' in os.environ: 
+            logger.debug("Loading "+ str(env_prefix) + "CONFIG_FILE...")
             self.config.from_pyfile(os.environ[env_prefix + 'CONFIG_FILE'])
         
         # 4. Finally loads from Environment Variables
@@ -75,14 +78,19 @@ class Eazy(Eve, Events):
         
     def load_blueprints(self):
         if self.config["ENABLE_SWAGGER_ROUTES"]:
+            logger.debug("Enabling swagger routes...")
             self.register_blueprint(swagger)
         if self.config["ENABLE_INDEX_ROUTES"]:
+            logger.debug("Enabling index routes...")
             self.register_blueprint(index_bp)
         if self.config["ENABLE_CONFIG_ROUTES"]:
+            logger.debug("Enabling config routes...")
             self.register_blueprint(config_bp)
         if self.config["ENABLE_HEALTH_ROUTES"]:
+            logger.debug("Enabling health routes...")
             self.register_blueprint(health_bp)
         if self.config["ENABLE_JSONRPC_ROUTES"]:
+            logger.debug("Enabling RPC routes...")
             rpc_route = '/' + self.config["API_VERSION"] + '/' + self.config["RPC_BASE_ROUTE"] + '/' + self.config["RPC_ROUTE_NAME"]
             self.add_url_rule(
                 rpc_route, "call_rpc", view_func=call_rpc, methods=["POST", "OPTIONS"]
