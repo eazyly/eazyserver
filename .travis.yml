@@ -1,20 +1,31 @@
+# Config file for automatic testing at travis-ci.org
+
 language: python
 python:
-- 3.6
-- 3.5
-- 3.4
-- 2.7
-# install: pip install -U tox-travis
-# script: tox
-install: pip install -e .
-script: pip install -e .
+  - 3.9
+  - 3.8
+  - 3.7
+  - 3.6
+  - 2.7
+
+# Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+install: pip install -U tox-travis
+
+# Command to run tests, e.g. python setup.py test
+script: tox
+
+# Assuming you have installed the travis-ci CLI tool, after you
+# create the Github repo and add it to Travis, run the
+# following command to finish PyPI deployment setup:
+# $ travis encrypt --add deploy.password
+
 deploy:
   provider: pypi
   distributions: sdist bdist_wheel
   user: ashutoshdtu
   password:
-    secure: oezm9vjEVtC/jHM2zg38jhCZ7Ue2ghBBqDMc4RNwT9k5AINKklJ9pmOT03pJ2+czz3sSQnlbfwEJttTlRKV/J469rO82MPGi0YSfdcQltrn6zDfKo6ZVQy+dWBIli52GvMKrQZri1CUS+FUxzD2AyLNdsGIU6tsciQOvUYANIkVcZ+1DK2L0XUYAIr6t6gRmhmkyXjW2p4ewDZK2I92c/bc+0Gq1jAPOQfu0uDQk03HTDAbWKRIJoqKJSpQFpnvZZLuBaRm8eHVwGrvfBumyTOXGaUgTtTnKk/sN7IJSjoYMezCJ4vKLi0D6lc3fpsmzIMULGzOvXiWdBCPoLpwzZxhEkRWy4H4iFeClrSySHrTWck2o2qNYW1xFIhgT9wJ+Ghz8a5ussFJrDhhwsbio85YMdJH5T/hn1gv0cNwHC/G9Gls9pAFFp6GecJt/eu14XRbQubpNvnP05TcWuH3K052DScJ9RetuA/2hekIGGuAYPN0rrFYGWCV2sBPKxTqp8COVYatkAo6OttdKZo1p4mdC9qSaULVLuQDjhWsP0ba/5wC1LEd0mGhy5qjXJA7H3/AN3VQfHmQ3xeF1Hzhwmcs5E/RCETxGCpfKDPSkcuZYLt66FhTtkAiBI9Zu6Pghc46xg0hWW/4G8c0bMg9SmYz9ZkKBHKpeN1rqUI2fZvg=
+    secure: CzE3j1b1OvQ1HRbzJjOdGTUHsm+JH2HpqRewDSeZj75jIiQVsIuv7ZqAaLhOqgioYGPYoN0mtNox9ZadmmjvvUoxPRfD9+NdXv3P7RbGn82akLAhzsYbK5IEP9BGjmHMNI5tIhUDMArC+lakHo7scRKZUj0J06tz3ZRx96bkQKDRYgW5cxJbiWchvYhB8/zC1WRw1SwuCqg/5RApr8wa4iW0gMFlt//wxxYEARwM3cCXshzmQpiT3GkkSgd1n6R32CM+otSXnNH3j7+7rDJ0iPrpqWFNBeTMGO8vfsJgqNedrXXMG2HS5nSSH0moqDmCZJWVH/fM3KFMxQlxeKbcczMtPn4Bkq1Tu9UBhL5qXPDM2V66c9rf53k4omC70wGWlIH0a08Yxi0ddGIy7MQWCYS/vtj0/D0wMNHCLAPuWyAFUoxrmOBY/JK5mpwyQVYGn3mb2MtNIRrpF8SWjaBIkHuyTA+Qxta5NLT7w2SUbguiWeG9ZSg0Lk/pSo81OZjTRHvQlm6StSOx5QlCEV1TFiX0UMUDZaRePl4VFMG2Jr26ohWx0RauLcNfNdKzPMw5XBq+cSYXF+coK60T7jcqG/XXKzHcbYS9O9GuGTWWYiAx5gbBbEkU9+4n1OCDQT3Pi3JSba149hILY51VuN7Jvg5z/A/InhubT1r3Ov99HeE=
   on:
     tags: true
-    repo: ashutoshdtu/eazyserver
-    python: 3.6
+    repo: eazyly/eazyserver
+    python: 3.9

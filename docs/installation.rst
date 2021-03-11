@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/ashutoshdtu/eazyserver
+    $ git clone git://github.com/eazyly/eazyserver
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/ashutoshdtu/eazyserver/tarball/master
+    $ curl  -OL https://github.com/eazyly/eazyserver/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/ashutoshdtu/eazyserver
-.. _tarball: https://github.com/ashutoshdtu/eazyserver/tarball/master
+.. _Github repo: https://github.com/eazyly/eazyserver
+.. _tarball: https://github.com/eazyly/eazyserver/tarball/master

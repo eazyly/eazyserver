@@ -1,25 +1,24 @@
 # -*- coding: utf-8 -*-
 
-"""Top-level package for eazyserver."""
+"""
+    eazyserver
+    ~~~~~~~~~~~~
+
+    A simple python web framework for creating RESTful and JSON-RPC services
+    Based on Python Eve, Python Flask.
+
+    License:
+        GPL-2.0, see LICENSE for more details.
+"""
 
 import os
-BASE_DIR=os.path.dirname(os.path.abspath(__file__))
-SETTINGS_INI = os.path.join(BASE_DIR, 'settings.ini')
-LOGGER_CONFIG = os.path.join(BASE_DIR, 'logger.conf')
-# VERSION_FILE = os.path.join(BASE_DIR, 'VERSION')
-# with open('VERSION') as version_file:
-#     version = version_file.read().strip()
+from .eazy import Eazy
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+VERSION_FILE = os.path.join(BASE_DIR, "VERSION")
+with open(VERSION_FILE) as version_file:
+    version = version_file.read().strip()
 
 __author__ = """Ashutosh Mishra"""
-__email__ = 'ashutoshdtu@gmail.com'
-__version__ = '1.0.5'
-
-
-import logging
-import logging.config
-logging.config.fileConfig(LOGGER_CONFIG)
-logger = logging.getLogger(__name__)
-logger.debug("Loaded " + __name__)
-
-from .eazyserver import Eazy
+__email__ = "ashutoshdtu@gmail.com"
+__version__ = version

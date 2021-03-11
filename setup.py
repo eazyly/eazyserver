@@ -6,65 +6,75 @@
 from setuptools import setup, find_packages
 import os
 import glob
+import shutil
 
-with open('VERSION') as version_file:
+
+description = "A simple python web framework for creating RESTful and JSON-RPC services"
+
+package_version_file = "src/eazyserver/VERSION"
+with open("VERSION") as version_file:
     version = version_file.read().strip()
+    shutil.copyfile("VERSION", package_version_file)
 
-with open('README.rst') as readme_file:
+with open("README.rst") as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-with open('AUTHORS.rst') as authors_file:
+with open("AUTHORS.rst") as authors_file:
     authors = authors_file.read()
 
-with open('CONTRIBUTING.rst') as contributing_file:
+with open("CONTRIBUTING.rst") as contributing_file:
     contributing = contributing_file.read()
 
-requirements = ['Click>=6.0', ]
-with open('requirements_dev.txt') as f:
+requirements = []
+with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
-setup_requirements = [ ]
+setup_requirements = []
 
-test_requirements = [ ]
+test_requirements = []
 
 setup(
     author="Ashutosh Mishra",
-    author_email='ashutoshdtu@gmail.com',
+    author_email="ashutoshdtu@gmail.com",
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
+        "Development Status :: 2 - Pre-Alpha",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: GPL-2.0",
+        "Natural Language :: English",
         "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
-    description="A simple python web framework for creating RESTful and JSON-RPC services",
+    description=description,
     entry_points={
-        'console_scripts': [
-            'eazyserver=eazyserver.cli:cli',
+        "console_scripts": [
+            "eazyserver=eazyserver.cli:cli",
         ],
     },
     install_requires=requirements,
-    license="MIT license",
-    long_description=readme + '\n\n' + history,
-    include_package_data=True,
-    keywords='eazyserver',
-    name='eazyserver',
-    packages=find_packages("src", include=['eazyserver']),
+    license="GPL-2.0",
+    long_description=readme + "\n\n" + history,
+    keywords="eazyserver",
+    name="eazyserver",
+    packages=find_packages("src", include=["eazyserver"]),
     package_dir={"": "src"},
-    py_modules=[os.path.splitext(os.path.basename(i))[0] for i in glob.glob("src/*.py")],
+    py_modules=[
+        os.path.splitext(os.path.basename(i))[0] for i in glob.glob("src/*.py")
+    ],
+    include_package_data=True,
     setup_requires=setup_requirements,
-    test_suite='tests',
+    test_suite="tests",
     tests_require=test_requirements,
-    url='https://github.com/eazyly/eazyserver',
+    url="https://github.com/eazyly/eazyserver",
     version=version,
     zip_safe=False,
 )
