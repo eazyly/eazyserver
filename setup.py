@@ -28,13 +28,13 @@ with open("AUTHORS.rst") as authors_file:
 with open("CONTRIBUTING.rst") as contributing_file:
     contributing = contributing_file.read()
 
-requirements = []
+requirements = ["Click>=7.0"]
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
-setup_requirements = []
+setup_requirements = ["pytest-runner"]
 
-test_requirements = []
+test_requirements = ["pytest>=3"]
 
 setup(
     author="Ashutosh Mishra",
