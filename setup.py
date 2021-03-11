@@ -11,6 +11,8 @@ import shutil
 
 description = "A simple python web framework for creating RESTful and JSON-RPC services"
 
+print("os.listdir(): " + str(os.listdir()))
+
 package_version_file = "src/eazyserver/VERSION"
 with open("VERSION") as version_file:
     version = version_file.read().strip()
