@@ -7,7 +7,8 @@
 
     Tests for `eazyserver` package.
 
-    :license: GPL-2.0, see LICENSE for more details.
+    License:
+        GPL-2.0, see LICENSE for more details.
 """
 
 
