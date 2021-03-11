@@ -1,4 +1,4 @@
-pip==19.2.3
+pip==21.0.1
 eve==1.1.5
 eve-swagger==0.1.3
 flask>=1.0
