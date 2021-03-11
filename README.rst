@@ -36,7 +36,7 @@ Did someone say features?
 
 * Cross-platform: Windows, Mac, and Linux are officially supported.
 
-* Works with Python 3.5, 3.6, 3.7, 3.8, 3.9 and PyPy.
+* Works with Python 3.7, 3.8, 3.9 and PyPy.
 
 * Supports RESTful APIs over mongodb datasource using Python Eve.
 

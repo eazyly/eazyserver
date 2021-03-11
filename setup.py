@@ -7,6 +7,7 @@ from setuptools import setup, find_packages
 import os
 import glob
 import shutil
+from collections import OrderedDict
 
 
 description = "A simple python web framework for creating RESTful and JSON-RPC services"
@@ -42,16 +43,18 @@ setup(
     author_email="ashutoshdtu@gmail.com",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
+        "Environment :: Web Environment",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GPL-2.0",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+        "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+        "Topic :: Software Development :: Libraries :: Application Frameworks",
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     description=description,
     entry_points={
@@ -74,6 +77,13 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/eazyly/eazyserver",
+    project_urls=OrderedDict(
+        (
+            ("Documentation", "http://eazyserver.readthedocs.io"),
+            ("Code", "https://github.com/eazyly/eazyserver"),
+            ("Issue tracker", "https://github.com/eazyly/eazyserver/issues"),
+        )
+    ),
     version=version,
     zip_safe=False,
 )
